@@ -10,6 +10,9 @@ services:
       - USERNAME=${USERNAME}
       - PASSWORD=${PASSWORD}
       - IMAI=${IMAI}
+    
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
 
 volumes:
   brainyboat-database:
