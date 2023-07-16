@@ -32,8 +32,8 @@ def get_gps_telemetry(
 
         if isinstance(msg, pynmea2.GGA):
             if float(msg.horizontal_dil) <= max_dilution:
-                lon = float(msg.lon)
-                lat = float(msg.lat)
+                lon = float(msg.longitude)
+                lat = float(msg.latitude)
         elif isinstance(msg, pynmea2.VTG):
             if (
                 msg.spd_over_grnd_kmph is not None
