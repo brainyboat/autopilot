@@ -1,0 +1,17 @@
+{
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "**/.venv": true
+  },
+  "cSpell.words": [
+    "brainyboat",
+    "grnd",
+    "httpx",
+    "imai",
+    "kmph",
+    "pydantic",
+    "pynmea",
+    "websockets"
+  ]
+}
