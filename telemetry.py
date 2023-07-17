@@ -1,78 +1,81 @@
 import io
+import time
 from datetime import datetime
+from multiprocessing import Value
 
 import httpx
 import pynmea2
 from serial import Serial
 
-from models import Telemetry
+from models import AddTelemetry, Telemetry
 
-prev_angle: float | None = None
+longitude = Value("f", float("nan"))
+latitude = Value("f", float("nan"))
+angle = Value("f", float("nan"))
+temperature = Value("f", float("nan"))
+voltage = Value("f", -1)
+velocity = Value("f", float("nan"))
 
 
-def get_gps_telemetry(
-    max_dilution: float = 5,
-    min_velocity: float = 1,
-) -> tuple[float, float, float, float]:
-    global prev_angle
-    lon = lat = velocity = angle = None
-    gps = io.TextIOWrapper(
+def get_telemetry() -> Telemetry:
+    return Telemetry(
+        longitude=longitude.value,  # type: ignore[attr-defined]
+        latitude=latitude.value,  # type: ignore[attr-defined]
+        angle=angle.value,  # type: ignore[attr-defined]
+        temperature=temperature.value,  # type: ignore[attr-defined]
+        voltage=voltage.value,  # type: ignore[attr-defined]
+        velocity=velocity.value,  # type: ignore[attr-defined]
+    )
+
+
+def listen_telemetry(thermal_zone: int = 1) -> None:
+    gps_serial = io.TextIOWrapper(
         Serial(
             "/dev/ttyUSB0",
             9600,
-            timeout=1,
+            timeout=0.5,
         )
     )
 
-    while lon is None or lat is None or velocity is None or angle is None:
+    while True:
         try:
-            msg = pynmea2.parse(gps.readline())
+            gps = pynmea2.parse(gps_serial.readline())
         except Exception:
             continue
 
-        if isinstance(msg, pynmea2.GGA):
-            if float(msg.horizontal_dil) <= max_dilution:
-                lon = float(msg.longitude)
-                lat = float(msg.latitude)
-        elif isinstance(msg, pynmea2.VTG):
-            if (
-                msg.spd_over_grnd_kmph is not None
-                and float(msg.spd_over_grnd_kmph) >= min_velocity
-            ):
-                velocity = float(msg.spd_over_grnd_kmph)
+        if isinstance(gps, pynmea2.GGA):
+            if gps.lon:
+                longitude.value = float(gps.longitude)  # type: ignore[attr-defined]
+            if gps.lat:
+                latitude.value = float(gps.latitude)  # type: ignore[attr-defined]
 
-            if msg.true_track is not None:
-                angle = float(msg.true_track)
-                prev_angle = angle
-            elif prev_angle is not None:
-                angle = prev_angle
+        if isinstance(gps, pynmea2.VTG):
+            if gps.spd_over_grnd_kmph is not None:
+                velocity.value = float(gps.spd_over_grnd_kmph)  # type: ignore[attr-defined]
 
-    return lon, lat, velocity, angle
+            if gps.true_track is not None:
+                angle.value = float(gps.true_track)  # type: ignore[attr-defined]
 
-
-def get_system_telemetry(thermal_zone: int) -> tuple[float, float]:
-    with open(
-        f"/sys/class/thermal/thermal_zone{thermal_zone}/temp"
-    ) as temperature_file:
-        temperature = int(temperature_file.read()) / 1000
-
-    return temperature, -1
+        with open(
+            f"/sys/class/thermal/thermal_zone{thermal_zone}/temp"
+        ) as temperature_file:
+            temperature.value = int(temperature_file.read()) / 1000  # type: ignore[attr-defined]
 
 
-def send_telemetry(client: httpx.Client, ship_id: int) -> None:
+def send_telemetry(client: httpx.Client, ship_id: int, delay: int = 1) -> None:
     while True:
-        lon, lat, velocity, angle = get_gps_telemetry(5, 1.5)
-        temperature, voltage = get_system_telemetry(1)
-
-        telemetry = Telemetry(
-            ship_id=ship_id,
-            datetime=datetime.now(),
-            longitude=lon,
-            latitude=lat,
-            angle=angle,
-            temperature=temperature,
-            voltage=voltage,
-            velocity=velocity,
+        telemetry = get_telemetry()
+        client.post(
+            "/telemetry/add",
+            json=AddTelemetry(
+                longitude=telemetry.longitude,
+                latitude=telemetry.latitude,
+                angle=telemetry.angle,
+                temperature=telemetry.temperature,
+                voltage=telemetry.voltage,
+                velocity=telemetry.velocity,
+                ship_id=ship_id,
+                datetime=datetime.utcnow(),
+            ).model_dump(mode="json"),
         )
-
-        client.post("/telemetry/add", json=telemetry.model_dump(mode="json"))
+        time.sleep(delay)

@@ -1,10 +1,13 @@
 import logging
+import time
+from math import isnan
+from multiprocessing import Process
 
 import httpx
 
 from models import Ship
 from settings import settings
-from telemetry import send_telemetry
+from telemetry import get_telemetry, listen_telemetry, send_telemetry
 
 
 def login(client: httpx.Client) -> str:
@@ -36,7 +39,24 @@ client = httpx.Client(base_url=settings.base_url)
 
 client.headers["X-Token"] = login(client)
 ship = get_ship_id(client)
-
 logging.info(f"Name of this ship: {ship.name}")
 
-send_telemetry(client, ship.id)
+listen_telemetry_process = Process(target=listen_telemetry, args=(1,))
+listen_telemetry_process.start()
+
+logging.info("Wait telemetry normalization")
+
+telemetry = get_telemetry()
+while (
+    isnan(telemetry.longitude)
+    or isnan(telemetry.longitude)
+    or isnan(telemetry.angle)
+    or isnan(telemetry.temperature)
+    or isnan(telemetry.voltage)
+    or isnan(telemetry.velocity)
+):
+    telemetry = get_telemetry()
+    time.sleep(1)
+
+send_telemetry_process = Process(target=send_telemetry, args=(client, ship.id, 1))
+send_telemetry_process.start()
