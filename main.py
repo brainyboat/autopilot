@@ -5,6 +5,7 @@ from multiprocessing import Process
 
 import httpx
 
+from course import listen_course
 from models import Ship
 from settings import settings
 from telemetry import get_telemetry, listen_telemetry, send_telemetry
@@ -37,7 +38,8 @@ def get_ship_id(client: httpx.Client) -> Ship:
 logging.basicConfig(level=logging.INFO)
 client = httpx.Client(base_url=settings.base_url)
 
-client.headers["X-Token"] = login(client)
+token = login(client)
+client.headers["X-Token"] = token
 ship = get_ship_id(client)
 logging.info(f"Name of this ship: {ship.name}")
 
@@ -58,5 +60,9 @@ while (
     telemetry = get_telemetry()
     time.sleep(1)
 
+listen_course_process = Process(target=listen_course, args=(token, ship.id))
 send_telemetry_process = Process(target=send_telemetry, args=(client, ship.id, 1))
+
 send_telemetry_process.start()
+listen_course_process.start()
+listen_course_process.join()
