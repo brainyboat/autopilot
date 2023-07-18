@@ -1,0 +1,10 @@
+[Unit]
+Description=BrainyBoat autopilot service
+
+[Service]
+WorkingDirectory=/home/jetson/BrainyBoatAutopilot/
+ExecStart=python3 main.py
+EnvironmentFile=.env
+
+[Install]
+WantedBy=multi-user.target

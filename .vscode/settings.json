@@ -5,13 +5,20 @@
     "**/.venv": true
   },
   "cSpell.words": [
+    "appsink",
     "brainyboat",
     "grnd",
+    "gstreamer",
     "httpx",
     "imai",
+    "imencode",
     "kmph",
+    "nvarguscamerasrc",
+    "NVMM",
+    "nvvidconv",
     "pydantic",
     "pynmea",
+    "videoconvert",
     "websockets"
   ]
 }

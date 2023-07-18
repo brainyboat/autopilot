@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import logging
 from json import loads
 from typing import Callable
 
 from httpx import URL
-from websockets.exceptions import ConnectionClosed
 from websockets.sync.client import connect
 
 from settings import settings

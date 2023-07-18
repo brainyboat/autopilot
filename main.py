@@ -5,6 +5,7 @@ from multiprocessing import Process
 
 import httpx
 
+from camera import camera_record
 from course import listen_course
 from models import Ship
 from settings import settings
@@ -60,9 +61,12 @@ while (
     telemetry = get_telemetry()
     time.sleep(1)
 
+camera_record_process = Process(target=camera_record, args=())
 listen_course_process = Process(target=listen_course, args=(token, ship.id))
 send_telemetry_process = Process(target=send_telemetry, args=(client, ship.id, 1))
 
 send_telemetry_process.start()
 listen_course_process.start()
-listen_course_process.join()
+camera_record_process.start()
+
+camera_record_process.join()

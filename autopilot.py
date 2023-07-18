@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from course import on_course_update
 
 
