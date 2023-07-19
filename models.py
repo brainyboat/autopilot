@@ -1,6 +1,6 @@
-from __future__ import annotations
-
+from typing import Optional
 from datetime import datetime
+from typing import List, Tuple
 
 from pydantic import BaseModel
 
@@ -13,7 +13,7 @@ class User(BaseModel):
 class Ship(BaseModel):
     id: int
     imai: int
-    course: list[tuple[float, float]] | None
+    course: Optional[List[Tuple[float, float]]]
     name: str
     color: str
     owner: User
