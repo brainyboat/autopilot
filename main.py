@@ -7,6 +7,7 @@ import httpx
 
 from camera import camera_record
 from course import listen_course
+from distance import listen_distance
 from models import Ship
 from settings import settings
 from telemetry import get_telemetry, listen_telemetry, send_telemetry
@@ -59,10 +60,12 @@ while (
     or isnan(telemetry.velocity)
 ):
     telemetry = get_telemetry()
+    logging.info(telemetry)
     time.sleep(1)
 
 camera_record_process = Process(target=camera_record, args=())
 listen_course_process = Process(target=listen_course, args=(token, ship.id))
+listen_distance_process = Process(target=listen_distance, args=())
 send_telemetry_process = Process(target=send_telemetry, args=(client, ship.id, 1))
 
 send_telemetry_process.start()

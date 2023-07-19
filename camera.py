@@ -7,6 +7,7 @@ from itertools import count
 
 import cv2
 
+from distance import get_distance
 from telemetry import get_telemetry
 
 
@@ -45,7 +46,8 @@ def camera_record() -> None:
             "longitude",
             "angle",
             "velocity",
-            "second",
+            "distance",
+            "seconds",
             "datetime",
         )
     )
@@ -73,6 +75,7 @@ def camera_record() -> None:
                     telemetry.longitude,
                     telemetry.angle,
                     telemetry.velocity,
+                    get_distance(),
                     time.time() - start,
                     datetime.now(),
                 )
